@@ -1,8 +1,0 @@
-What exactly is SHAP?
-
-Imagine you are at a UFC event with three judges. One judge loves wrestling, one loves striking, and one loves reach. SHAP acts like a reporter who interviews the "Machine Learning Judge" and asks: "How much did each of those three factors contribute to your final decision for this specific fight?"
-
-Why this is "Adversarial":
-Once your shap.summary_plot shows you that Reach is the most important factor, you have found the model's "logic."
-
-The Adversarial Test: You will then go back to your data, find a fighter who won, and manually lower their Reach stat in the code to see if the model "panics" and changes its mind. If a 1cm change in reach flips the prediction, you've proven the model isn't robust—it’s fragile.
