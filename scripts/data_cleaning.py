@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
 
+# make a function that cleans csv files and filters out new fighters and fighters with less stats then a certain threshold 
 def clean_fighter_data(input_path, output_path):
-    # Load the data
+    # Load the data onto a dataframe || like Excel sheet living inside Python
     df = pd.read_csv(input_path)
     
     # 0. COLUMN MAPPING (Kaggle → our schema)
@@ -16,7 +17,7 @@ def clean_fighter_data(input_path, output_path):
             'Str_Def':      'strike_defense',
             'TD_Avg':       'takedown_avg',
             'TD_Acc':       'takedown_accuracy',
-            'TD_Def':       'takedown_defense',   # ADD THIS
+            'TD_Def':       'takedown_defense',   
             'Stance':       'stance'
         })
 
