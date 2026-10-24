@@ -76,7 +76,7 @@ def generate_matchups(input_path, output_path, n_matchups = 20000, seed = 42):
 
 
 if __name__ == "__main__":
-    generate_matchups(
-        'data/processed/cleaned_fighters.csv',
-        'data/processed/matchups.csv'
+   generate_matchups(
+        "data/processed/cleaned_fighters.csv",
+        "data/processed/matchups.csv"
     )
