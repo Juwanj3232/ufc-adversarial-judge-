@@ -1,95 +1,134 @@
-# UFC Adversarial Judge
+# 🥊 UFC Adversarial Judge
 
-An AI system that predicts the outcome of a UFC matchup **and explains its reasoning** — not just "Fighter A wins," but "Fighter A wins, driven primarily by a strike accuracy edge and volume striking advantage, despite Fighter B's superior takedown defense."
+An interpretable AI fight prediction system that acts as an **Adversarial Judge** — it doesn't just predict who wins a UFC matchup, but interrogates **why** using real strike, grappling, physical, and career data, explained through per-prediction **SHAP values** and tactical fight breakdowns.
 
-Built with `scikit-learn` (Random Forest) and `SHAP` for per-prediction explainability.
+Built with `scikit-learn` (logistic regression + gradient-boosted trees blend) and `SHAP` (`TreeExplainer`), on round-by-round UFCStats data refreshed automatically.
 
 ---
 
-## The Idea
+## 🎯 The Vision & Intellect Companion
 
-Most "who wins this fight" predictors are black boxes. This project's goal was to build a **judge**, not just a predictor — a model that can be interrogated about *why* it favors one fighter over another for any specific matchup, using real skill statistics rather than gut-feel commentary.
+Most UFC prediction models are black boxes that output a single probability without context. The **UFC Adversarial Judge** is designed to pair directly with your combat sports intellect:
+1. **Explainable Verdicts**: It provides a courtroom-style deliberation breakdown showing exactly which attributes pushed the decision toward Fighter A or Fighter B.
+2. **Strength of Schedule Reality Checks**: Flags when raw stats (like high striking volume or accuracy) are padded against unranked newcomers vs. battle-tested against championship-level competition.
+3. **Interactive Fight Simulation**: Allows you to adjust fighter gameplans (e.g., "What if Fighter A shoots 2 takedowns per round?") and watch how the judge's verdict responds in real time.
 
-## Pipeline
+---
 
-```
-data_cleaning.py      → cleans raw fighter data, converts units, engineers win_ratio
-generate_matchups.py  → builds synthetic head-to-head matchups from fighter pairs
-train_model.py         → trains a classifier, evaluates it, and explains predictions with SHAP
-```
-
-Each script writes its output to `data/processed/`, which the next script consumes.
-
-## How It Works
-
-**1. Data.** Fighter career statistics (striking, grappling, physical measurements) sourced from a public UFC stats dataset. Cleaned and standardized: imperial units converted to metric, percentage strings parsed to decimals, missing values median-imputed.
-
-**2. Matchup generation.** Rather than predicting a single fighter's career win total (a weak, low-signal target — see *Design Decisions* below), the model predicts **head-to-head outcomes**. For any two fighters, we compute a *difference vector* — each stat for Fighter A minus the same stat for Fighter B — and label the row by which fighter has the higher career win ratio. Every matchup is also mirrored (B − A, with the label flipped), so the model can't learn a lazy "whoever's listed first wins" shortcut.
-
-**3. Classification.** A `RandomForestClassifier` (100 trees) is trained on ~40,000 synthetic matchups, split 80/20 for training and evaluation.
-
-**4. Explainability.** `SHAP`'s `TreeExplainer` breaks down any single prediction into per-feature contributions — showing exactly which stat advantages pushed the model toward each fighter, and by how much.
-
-## Results
-
-| Metric | Score |
-|---|---|
-| Accuracy | 61.9% |
-| Confusion matrix | Balanced — errors split ~evenly between both directions |
-
-**Global feature importance** (what the model relies on most, across all matchups):
-
-| Rank | Feature | Importance |
-|---|---|---|
-| 1 | Takedown average | 0.160 |
-| 2 | Strikes landed/min | 0.150 |
-| 3 | Strikes absorbed/min | 0.148 |
-| 4 | Takedown defense | 0.129 |
-| 5 | Strike accuracy | 0.120 |
-| 6 | Strike defense | 0.113 |
-| 7 | Reach | 0.092 |
-| 8 | Height | 0.088 |
-
-Global importance shows what the model values *on average* — but SHAP reveals that the deciding factor often shifts per matchup. In one tested case, `takedown_avg` (the top global feature) was nearly irrelevant, while `strike_accuracy` and `SLpM` drove the entire prediction. That's the explainability payoff: the model's *stated general priorities* and its *actual reasoning on a specific fight* aren't always the same thing.
-
-## Design Decisions Worth Knowing
-
-**Why predict head-to-head outcomes instead of career stats?**
-Earlier iterations tried predicting a fighter's raw career win total, and separately their win ratio, directly from career-average stats. Both capped out at a low R² (0.22 and 0.12, respectively) — because a fighter's win *count* is mostly a function of matchmaking and career length, not skill alone. Reframing the problem as "who wins this specific matchup" — using *differences* between two fighters rather than absolute stats — produced a meaningfully more learnable signal.
-
-**Why difference vectors instead of raw stats side-by-side?**
-Feeding both fighters' raw stats into the model forces it to learn, from scratch, that two columns represent "the same stat for two different people." Pre-computing the difference does that comparison up front, so every input directly represents an *advantage*, not an absolute value the model has to relate on its own.
-
-**Why exclude win/loss counts from the feature set?**
-The label (who wins) is derived from win ratio. If win ratio — or wins/losses directly — were also included as *features*, the model could shortcut straight to the answer instead of learning from skill statistics. This is a data leakage trap, and earlier versions of this project fell into it before catching and fixing it.
-
-**Why median imputation over mean?**
-Athletic statistics contain real outliers (a single dominant performance, a short and unusual career). Mean is dragged by those outliers; median represents the typical fighter far more faithfully.
-
-## What Went Wrong (and What We Learned From It)
-
-- **The scraper is parked.** UFCStats.com serves a JavaScript proof-of-work challenge to block non-browser requests — `requests`/`BeautifulSoup` can solve HTTP but can't execute JS. Rather than stand up a full Selenium browser-automation pipeline, the project pivoted to a maintained Kaggle dataset with equivalent stats and far more coverage (4,455 fighters vs. the original 20-fighter test run).
-- **The original regression approach had a data leakage bug** — `win_ratio` was included both as a feature and used to define the target, artificially inflating R². Removing it dropped the score, but produced an honest baseline.
-- **Two different regression targets (win count, win ratio) were tested and both hit a low ceiling**, which is itself the finding that motivated the pivot to head-to-head classification.
-
-## Setup
+## 🚀 Quickstart
 
 ```bash
-pip install pandas numpy scikit-learn shap
-python3 scripts/data_cleaning.py
-python3 scripts/generate_matchups.py
-python3 scripts/train_model.py
+pip install -r requirements.txt
+
+# 1. Pull the latest UFC data, rebuild features, retrain, evaluate and backtest (~1 min)
+python3 scripts/update_data.py --full
+
+# 2. Predict a fight (Adesanya vs Shara Magomedov, UFC Saudi Arabia, 5 Dec 2026)
+python3 scripts/predict_fight.py "Israel Adesanya" "Shara Magomedov" --date 2026-12-05
+
+# What-if sandbox, or refresh the data first
+python3 scripts/predict_fight.py "Adesanya" "Shara" --simulate
+python3 scripts/predict_fight.py "Adesanya" "Shara" --refresh
+
+# 3. Backtest any fighter's past fights, predicted honestly and explained
+python3 scripts/backtest.py --fighter "Israel Adesanya" --fighter "Alex Pereira"
+
+# 4. Keep data fresh automatically (weekly macOS job, Mondays 09:00)
+bash scheduling/install_launchd.sh
 ```
 
-## Roadmap
-
-- [x] Data pipeline (cleaning, feature engineering)
-- [x] Head-to-head matchup generation
-- [x] Random Forest classifier (~62% accuracy)
-- [x] SHAP local + global explainability
-- [ ] Named-fighter explainer (query any two real fighters by name, get a live explanation)
-- [ ] Re-integrate a working scraper (or scheduled Kaggle dataset refresh) for ongoing data updates
+Full explanation of the data sources, update options, honest testing and the "what is a true win" analysis:
+**[docs/DATA_PIPELINE_AND_BACKTEST.md](docs/DATA_PIPELINE_AND_BACKTEST.md)**.
 
 ---
 
-*Built by Juwan Johnson as a portfolio project exploring interpretable ML for sports prediction.*
+## 🏗️ Architecture
+
+```
+update_data.py    → Downloads the daily UFCStats mirror (github.com/Greco1899/scrape_ufc_stats),
+                    validates it, keeps the previous copy, then runs every step below.
+build_dataset.py  → Builds bouts.csv (every fight + round-by-round stats for both fighters)
+                    and fighters.csv (height, reach, stance, DOB).
+features.py       → Replays every fight in date order and freezes each fighter's stats as they
+                    stood the morning of the fight: Elo, strength of schedule, striking, grappling,
+                    recent form, durability, age, layoff. No future information can leak in.
+judge_model.py    → The model (logistic regression + boosted trees blend) and its per-fight
+                    explanations (linear contributions + SHAP).
+train_model.py    → Walk-forward evaluation (each year predicted by a model trained only on earlier
+                    years) and the production model in models/ufc_judge_model.joblib.
+win_anatomy.py    → Judge model of what wins UFC decisions; grades every win (clear, competitive,
+                    coin-flip, contested, dominant/comeback/quick finish) and its route.
+backtest.py       → Spotlight backtest: retrains before each fight, predicts, explains, grades the
+                    result and says whether the model was right for the right reasons.
+predict_fight.py  → Tale of the tape, win probability, the reasons, matchup breakdown, what-if mode.
+```
+
+---
+
+## 📈 Honest Model Performance
+
+Every number below comes from walk-forward testing on 7,049 UFC fights (2012 to Nov 2026). Each
+prediction was made using only fights and stats from before that fight.
+
+| Metric | Value |
+|---|---|
+| Accuracy, all fights | **62.3%** |
+| Accuracy, 2024 to today | **64.4%** |
+| Accuracy on clearly-won fights | **69.8%** |
+| Log loss / Brier score | 0.652 / 0.230 |
+| Calibration | When the model says 65-70%, the favourite has won 68.3% |
+
+> **Why lower than the old 67-75%?** The previous pipeline gave every past fight each fighter's
+> *final* career averages, which include the fight being predicted and everything after it. Rebuilt
+> the old way on the same test years, that method scores 66.2%, but the edge almost vanishes for
+> experienced fighters, where the honest model now does slightly better (63.7% vs 63.1%). That is the
+> fingerprint of leakage rather than real skill.
+
+### What actually wins a UFC decision (judge model, all UFC decisions)
+
+| In-fight event | Worth about this many significant strikes on the cards |
+|---|---|
+| Knockdown | 16 |
+| Submission attempt | 5 |
+| Minute of control time | 5 |
+| Takedown | 3 |
+
+About 15% of UFC results are coin-flip decisions, contested decisions or comeback finishes. No
+pre-fight model does better than a coin flip on those, and this one scores 43-46%.
+
+---
+
+## 🥊 Adesanya & Shara Magomedov in the Backtest
+
+Predicted fight by fight using only information available before each bout:
+
+- **Israel Adesanya: 14 of 19 called correctly.** The model turned against him from 2024 on, citing
+  age, accumulated cage time, layoffs and opponents' momentum or wrestling, and it was right in all
+  three losses (Du Plessis, Imavov, Pyfer). His remaining edge is strength of schedule.
+- **Shara Magomedov: 5 of 7 called correctly.** He is a pure volume striker with one takedown
+  attempt in the UFC. His only loss came against a longer, elusive striker with a stronger schedule
+  (Michael Page).
+
+Fight-by-fight reasoning: `reports/backtest_report.md` (generated by `backtest.py`).
+
+---
+
+## 🛠️ Repository Structure
+
+```
+├── data/                       # git-ignored; rebuilt by update_data.py
+│   ├── raw/ufcstats/           # mirror CSVs + manifest.json (+ _previous/ for rollback)
+│   └── processed/              # bouts, fighters, features, fighter_snapshot
+├── docs/                       # DATA_PIPELINE_AND_BACKTEST.md and project documentation
+├── models/ufc_judge_model.joblib
+├── reports/                    # model_metrics.json, walk-forward predictions, backtest report
+├── scheduling/install_launchd.sh
+├── .github/workflows/refresh-data.yml   # optional weekly cloud refresh
+├── scripts/                    # pipeline (see Architecture); data_cleaning.py,
+│                               # generate_matchups.py and scraper.py are legacy and unused
+└── requirements.txt
+```
+
+---
+
+*Built as an interpretable machine learning system for combat sports analysis.*

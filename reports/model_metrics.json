@@ -1,0 +1,294 @@
+{
+  "walk_forward_all": [
+    {
+      "model": "elo_only",
+      "fights": 7049,
+      "accuracy": 0.5656,
+      "log_loss": 0.6808,
+      "brier": 0.2439,
+      "roc_auc": 0.5621
+    },
+    {
+      "model": "logistic",
+      "fights": 7049,
+      "accuracy": 0.6144,
+      "log_loss": 0.6539,
+      "brier": 0.231,
+      "roc_auc": 0.6472
+    },
+    {
+      "model": "boosting",
+      "fights": 7049,
+      "accuracy": 0.6126,
+      "log_loss": 0.6553,
+      "brier": 0.2316,
+      "roc_auc": 0.6445
+    },
+    {
+      "model": "blend",
+      "fights": 7049,
+      "accuracy": 0.6228,
+      "log_loss": 0.6515,
+      "brier": 0.2299,
+      "roc_auc": 0.6506
+    },
+    {
+      "model": "old_career_stats",
+      "fights": 7049,
+      "accuracy": 0.6622,
+      "log_loss": 0.6067,
+      "brier": 0.2104,
+      "roc_auc": 0.7236
+    }
+  ],
+  "walk_forward_veterans": [
+    {
+      "model": "elo_only",
+      "fights": 3420,
+      "accuracy": 0.5591,
+      "log_loss": 0.6805,
+      "brier": 0.2438,
+      "roc_auc": 0.5661
+    },
+    {
+      "model": "logistic",
+      "fights": 3420,
+      "accuracy": 0.6313,
+      "log_loss": 0.6451,
+      "brier": 0.2269,
+      "roc_auc": 0.667
+    },
+    {
+      "model": "boosting",
+      "fights": 3420,
+      "accuracy": 0.6243,
+      "log_loss": 0.6476,
+      "brier": 0.228,
+      "roc_auc": 0.6639
+    },
+    {
+      "model": "blend",
+      "fights": 3420,
+      "accuracy": 0.6368,
+      "log_loss": 0.6432,
+      "brier": 0.226,
+      "roc_auc": 0.6709
+    },
+    {
+      "model": "old_career_stats",
+      "fights": 3420,
+      "accuracy": 0.6307,
+      "log_loss": 0.6398,
+      "brier": 0.2244,
+      "roc_auc": 0.6849
+    }
+  ],
+  "walk_forward_2024_on": [
+    {
+      "model": "elo_only",
+      "fights": 1527,
+      "accuracy": 0.5573,
+      "log_loss": 0.6799,
+      "brier": 0.2435,
+      "roc_auc": 0.5777
+    },
+    {
+      "model": "logistic",
+      "fights": 1527,
+      "accuracy": 0.6411,
+      "log_loss": 0.6354,
+      "brier": 0.2222,
+      "roc_auc": 0.6884
+    },
+    {
+      "model": "boosting",
+      "fights": 1527,
+      "accuracy": 0.6464,
+      "log_loss": 0.6413,
+      "brier": 0.2249,
+      "roc_auc": 0.6813
+    },
+    {
+      "model": "blend",
+      "fights": 1527,
+      "accuracy": 0.6444,
+      "log_loss": 0.636,
+      "brier": 0.2224,
+      "roc_auc": 0.6894
+    },
+    {
+      "model": "old_career_stats",
+      "fights": 1527,
+      "accuracy": 0.6974,
+      "log_loss": 0.5697,
+      "brier": 0.1942,
+      "roc_auc": 0.7735
+    }
+  ],
+  "by_year_blend": [
+    {
+      "year": 2012,
+      "fights": 333,
+      "accuracy": 0.5946,
+      "log_loss": 0.6732,
+      "brier": 0.24,
+      "roc_auc": 0.5991
+    },
+    {
+      "year": 2013,
+      "fights": 376,
+      "accuracy": 0.6303,
+      "log_loss": 0.6447,
+      "brier": 0.2267,
+      "roc_auc": 0.6596
+    },
+    {
+      "year": 2014,
+      "fights": 494,
+      "accuracy": 0.6032,
+      "log_loss": 0.6715,
+      "brier": 0.2393,
+      "roc_auc": 0.6003
+    },
+    {
+      "year": 2015,
+      "fights": 464,
+      "accuracy": 0.6142,
+      "log_loss": 0.6609,
+      "brier": 0.2341,
+      "roc_auc": 0.6346
+    },
+    {
+      "year": 2016,
+      "fights": 483,
+      "accuracy": 0.6335,
+      "log_loss": 0.6565,
+      "brier": 0.2324,
+      "roc_auc": 0.6295
+    },
+    {
+      "year": 2017,
+      "fights": 446,
+      "accuracy": 0.63,
+      "log_loss": 0.6437,
+      "brier": 0.2264,
+      "roc_auc": 0.6683
+    },
+    {
+      "year": 2018,
+      "fights": 469,
+      "accuracy": 0.6226,
+      "log_loss": 0.6475,
+      "brier": 0.2282,
+      "roc_auc": 0.6648
+    },
+    {
+      "year": 2019,
+      "fights": 506,
+      "accuracy": 0.585,
+      "log_loss": 0.6721,
+      "brier": 0.2397,
+      "roc_auc": 0.6063
+    },
+    {
+      "year": 2020,
+      "fights": 444,
+      "accuracy": 0.6441,
+      "log_loss": 0.6409,
+      "brier": 0.2247,
+      "roc_auc": 0.6675
+    },
+    {
+      "year": 2021,
+      "fights": 497,
+      "accuracy": 0.5996,
+      "log_loss": 0.6656,
+      "brier": 0.2365,
+      "roc_auc": 0.6231
+    },
+    {
+      "year": 2022,
+      "fights": 506,
+      "accuracy": 0.6146,
+      "log_loss": 0.6486,
+      "brier": 0.229,
+      "roc_auc": 0.6547
+    },
+    {
+      "year": 2023,
+      "fights": 504,
+      "accuracy": 0.631,
+      "log_loss": 0.6442,
+      "brier": 0.2268,
+      "roc_auc": 0.6624
+    },
+    {
+      "year": 2024,
+      "fights": 513,
+      "accuracy": 0.6257,
+      "log_loss": 0.6396,
+      "brier": 0.2242,
+      "roc_auc": 0.6875
+    },
+    {
+      "year": 2025,
+      "fights": 513,
+      "accuracy": 0.6589,
+      "log_loss": 0.6295,
+      "brier": 0.2198,
+      "roc_auc": 0.6958
+    },
+    {
+      "year": 2026,
+      "fights": 501,
+      "accuracy": 0.6487,
+      "log_loss": 0.6391,
+      "brier": 0.2234,
+      "roc_auc": 0.6862
+    }
+  ],
+  "calibration_blend": [
+    {
+      "model_confidence": "50%-55%",
+      "fights": 1863,
+      "avg_predicted": 0.5247,
+      "favourite_actually_won": 0.5545
+    },
+    {
+      "model_confidence": "55%-60%",
+      "fights": 1596,
+      "avg_predicted": 0.574,
+      "favourite_actually_won": 0.5689
+    },
+    {
+      "model_confidence": "60%-65%",
+      "fights": 1351,
+      "avg_predicted": 0.6245,
+      "favourite_actually_won": 0.6269
+    },
+    {
+      "model_confidence": "65%-70%",
+      "fights": 992,
+      "avg_predicted": 0.6736,
+      "favourite_actually_won": 0.6835
+    },
+    {
+      "model_confidence": "70%-75%",
+      "fights": 666,
+      "avg_predicted": 0.7235,
+      "favourite_actually_won": 0.7147
+    },
+    {
+      "model_confidence": "75%-80%",
+      "fights": 350,
+      "avg_predicted": 0.7728,
+      "favourite_actually_won": 0.7429
+    },
+    {
+      "model_confidence": "80%-100%",
+      "fights": 231,
+      "avg_predicted": 0.8366,
+      "favourite_actually_won": 0.8139
+    }
+  ]
+}
