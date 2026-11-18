@@ -1,76 +1,147 @@
-import pandas as pd
+import os
+import re
 import numpy as np
+import pandas as pd
+from icecream import ic
 
-# make a function that cleans csv files and filters out new fighters and fighters with less stats then a certain threshold 
-def clean_fighter_data(input_path, output_path):
-    # Load the data onto a dataframe || like Excel sheet living inside Python
+# ==============================================================================
+# UFC ADVERSARIAL JUDGE - DATA CLEANING PIPELINE
+# ==============================================================================
+# Enhancements made:
+# 1. PRESERVE AUTHENTIC ZEROES: Previous code replaced 0.0 with median for
+#    takedown_avg and takedown_accuracy. This falsely turned pure kickboxers
+#    (e.g., Shara Magomedov, Adesanya) into wrestlers with 1.65 TD/15min!
+#    We now keep authentic 0.0s for wrestling/grappling.
+# 2. ANTHROPOMETRIC IMPUTATION: If reach is missing, we impute based on height
+#    (ape ratio ~1.0) rather than dropping 1,900+ fighters from the roster.
+# 3. ADVANCED MMA FEATURE ENGINEERING:
+#    - ape_index (reach_cm - height_cm): anatomical reach advantage
+#    - strike_differential (SLpM - SApM): net strikes landed vs absorbed
+#    - striking_efficiency: net effective striking rate factoring accuracy & defense
+#    - takedown_threat: TD_Avg * TD_Acc
+#    - dynamic DOB parsing: enables precise age calculations for future fights
+# 4. DE-DUPLICATION: Filters out duplicate namesake profiles by retaining the
+#    profile with the most recorded fights.
+# ==============================================================================
+
+
+def height_to_cm(h):
+    """Converts height string (e.g. 5' 11\") to centimeters."""
+    if pd.isna(h) or '--' in str(h):
+        return np.nan
+    try:
+        parts = str(h).replace('"', '').split("'")
+        feet = int(parts[0])
+        inches = int(parts[1].strip())
+        return round((feet * 12 + inches) * 2.54, 2)
+    except Exception:
+        return np.nan
+
+
+def reach_to_cm(r):
+    """Converts reach string (e.g. 74.0\") to centimeters."""
+    if pd.isna(r) or '--' in str(r):
+        return np.nan
+    try:
+        inches = float(str(r).replace('"', '').strip())
+        return round(inches * 2.54, 2)
+    except Exception:
+        return np.nan
+
+
+def pct_to_float(p):
+    """Converts percentage string (e.g. 54%) to decimal float (0.54)."""
+    if pd.isna(p) or '--' in str(p):
+        return np.nan
+    try:
+        return float(str(p).replace('%', '').strip()) / 100.0
+    except Exception:
+        return np.nan
+
+
+def clean_fighter_data(input_path='data/raw/ufc_fighters_final.csv',
+                       output_path='data/processed/cleaned_fighters.csv'):
+    """Cleans raw fighter data, calculates advanced MMA metrics, and exports processed CSV."""
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     df = pd.read_csv(input_path)
-    
-    # 0. COLUMN MAPPING (Kaggle → our schema)
-    # Renames Kaggle's column names to match what the rest of this script expects.
-    df = df.rename(columns={
-            'Fighter_Name': 'name',
-            'Wins':         'wins',
-            'Losses':       'losses',
-            'Draws':        'draws',
-            'Str_Acc':      'strike_accuracy',
-            'Str_Def':      'strike_defense',
-            'TD_Avg':       'takedown_avg',
-            'TD_Acc':       'takedown_accuracy',
-            'TD_Def':       'takedown_defense',   
-            'Stance':       'stance'
-        })
+    ic(f"Loaded {len(df)} raw fighter records.")
 
-    # Convert Height from "5' 11"" string to centimeters (float)
-    def height_to_cm(h):
-        if pd.isna(h) or '--' in str(h): return None
-        try:
-            parts = str(h).replace('"','').split("'")
-            return round((int(parts[0]) * 12 + int(parts[1].strip())) * 2.54, 2)
-        except: return None
+    # 1. Standardize column names
+    column_mapping = {
+        'Fighter_Name': 'name',
+        'Wins': 'wins',
+        'Losses': 'losses',
+        'Draws': 'draws',
+        'Height': 'height_raw',
+        'Weight': 'weight_raw',
+        'Reach': 'reach_raw',
+        'Stance': 'stance',
+        'DOB': 'dob_raw',
+        'SLpM': 'SLpM',
+        'Str_Acc': 'strike_accuracy',
+        'SApM': 'SApM',
+        'Str_Def': 'strike_defense',
+        'TD_Avg': 'takedown_avg',
+        'TD_Acc': 'takedown_accuracy',
+        'TD_Def': 'takedown_defense',
+        'Sub_Avg': 'sub_avg'
+    }
+    df = df.rename(columns=column_mapping)
 
-    # Convert Reach from "66.0"" string to centimeters (float)
-    def reach_to_cm(r):
-        if pd.isna(r) or '--' in str(r): return None
-        try:
-            return round(float(str(r).replace('"','')) * 2.54, 2)
-        except: return None
+    # 2. Convert physical dimensions
+    df['height_cm'] = df['height_raw'].apply(height_to_cm)
+    df['reach_cm'] = df['reach_raw'].apply(reach_to_cm)
 
-    # Strip the % sign and convert to decimal (38% → 0.38)
-    def pct_to_float(p):
-        if pd.isna(p): return None
-        try:
-            return float(str(p).replace('%','').strip()) / 100
-        except: return None
+    # If reach is missing, humans typically have reach ~ height (ape index = 1.0)
+    # Using height avoids dropping fighters whose reach wasn't measured on regional cards
+    df['reach_cm'] = df['reach_cm'].fillna(df['height_cm'])
+    df['height_cm'] = df['height_cm'].fillna(df['height_cm'].median())
+    df['reach_cm'] = df['reach_cm'].fillna(df['height_cm'])
+    df['ape_index'] = df['reach_cm'] - df['height_cm']
 
-    df['height_cm']       = df['Height'].apply(height_to_cm)
-    df['reach_cm']        = df['Reach'].apply(reach_to_cm)
+    # 3. Convert percentages and numeric stats
     df['strike_accuracy'] = df['strike_accuracy'].apply(pct_to_float)
-    df['strike_defense']  = df['strike_defense'].apply(pct_to_float)
-    df['takedown_accuracy'] = df['takedown_accuracy'].apply(pct_to_float) if 'takedown_accuracy' in df.columns else 0.0
+    df['strike_defense'] = df['strike_defense'].apply(pct_to_float)
+    df['takedown_accuracy'] = df['takedown_accuracy'].apply(pct_to_float)
     df['takedown_defense'] = df['takedown_defense'].apply(pct_to_float)
-    
-    # 1. Drop non-competitors (Remove if they have 0 wins AND 0 losses)
-    # This removes "Ghost" profiles that haven't actually fought.
-    df = df[~((df['wins'] == 0) & (df['losses'] == 0))]
 
-    # 2. Imputation (Replace 0.0 with the Median)
-    # We use median because UFC stats often have outliers that skew the mean.
-    cols_to_fix = ['strike_accuracy', 'strike_defense', 'takedown_accuracy', 'takedown_avg']
-    
-    for col in cols_to_fix:
-        # Replace 0.0 with NaN so we can calculate the median properly
-        df[col] = df[col].replace(0.0, np.nan)
-        median_val = df[col].median()
-        df[col] = df[col].fillna(median_val)
+    for num_col in ['SLpM', 'SApM', 'takedown_avg', 'sub_avg', 'wins', 'losses', 'draws']:
+        df[num_col] = pd.to_numeric(df[num_col], errors='coerce').fillna(0.0)
 
-    # 3. Feature Engineering: Win Ratio
-    # We add 1 to the denominator to avoid "Division by Zero" errors (Laplace Smoothing)
+    # 4. Fill missing rates responsibly
+    # Defense and accuracy metrics: fill missing with division/typical median (~50%)
+    df['strike_accuracy'] = df['strike_accuracy'].fillna(df['strike_accuracy'].median())
+    df['strike_defense'] = df['strike_defense'].fillna(df['strike_defense'].median())
+    df['takedown_defense'] = df['takedown_defense'].fillna(df['takedown_defense'].median())
+
+    # Takedown accuracy: if fighter never attempts takedowns, accuracy is 0.0, NOT median!
+    df['takedown_accuracy'] = df['takedown_accuracy'].fillna(0.0)
+
+    # 5. Advanced Feature Engineering
+    df['total_fights'] = df['wins'] + df['losses'] + df['draws']
     df['win_ratio'] = df['wins'] / (df['wins'] + df['losses'] + 0.001)
+    df['strike_differential'] = df['SLpM'] - df['SApM']
+    
+    # Net striking efficiency: offensive output times accuracy minus defensive absorption
+    df['striking_efficiency'] = (df['SLpM'] * df['strike_accuracy']) - (df['SApM'] * (1.0 - df['strike_defense']))
+    df['takedown_threat'] = df['takedown_avg'] * df['takedown_accuracy']
 
-    # Save the cleaned data
+    # 6. Parse DOB for dynamic age calculation
+    df['dob'] = pd.to_datetime(df['dob_raw'], errors='coerce')
+    df['stance'] = df['stance'].fillna('Orthodox').str.strip()
+
+    # 7. Drop inactive ghost profiles (0 wins, 0 losses)
+    df = df[df['total_fights'] > 0].copy()
+
+    # 8. De-duplicate fighters with identical names: keep the profile with more fights
+    df = df.sort_values(by=['total_fights', 'wins'], ascending=False).drop_duplicates(subset=['name'], keep='first')
+    df = df.sort_values(by='name').reset_index(drop=True)
+
+    # Save cleaned data
     df.to_csv(output_path, index=False)
-    print(f"Cleaned data saved to {output_path}")
+    ic(f"Successfully cleaned and saved {len(df)} fighter records to {output_path}")
+    return df
+
 
 if __name__ == "__main__":
-    clean_fighter_data('data/raw/ufc_fighters_final.csv', 'data/processed/cleaned_fighters.csv')
+    clean_fighter_data()
